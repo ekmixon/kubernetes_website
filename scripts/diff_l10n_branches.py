@@ -73,7 +73,7 @@ def git_diff(filepath, l_commit, r_commit, stat=False):
 
 
 def git_exists(path, filepath):
-    cmd = ["git", "cat-file", "-e", "{}:{}".format(path, filepath)]
+    cmd = ["git", "cat-file", "-e", f"{path}:{filepath}"]
     ret_code = subprocess.call(cmd, stderr=DEVNULL)
     return ret_code == 0
 
@@ -83,24 +83,24 @@ def process_diff_status(diff_status, l_commit, r_commit, src_lang_path,
     status_letter = diff_status[0]
     filepath = diff_status[1]
 
-    size_xs = 10
-    size_s = 30
-    size_m = 100
-    size_l = 500
-    size_xl = 1000
-
     if git_exists(r_commit, filepath.replace(src_lang_path, l10n_lang_path)):
+        size_xs = 10
+        size_s = 30
+        size_m = 100
+        size_l = 500
+        size_xl = 1000
+
         if status_letter == 'D':
             global index_to_be_deleted
             index_to_be_deleted += 1
-            fileindex = "D" + str(index_to_be_deleted) + '. '
+            fileindex = f"D{index_to_be_deleted}. "
             deleted = {"fileindex": fileindex,
                         "filepath": filepath }
             files_to_be_deleted.append(deleted)
         elif status_letter.startswith('R'):
             global index_to_be_renamed
             index_to_be_renamed += 1
-            fileindex = "R" + str(index_to_be_renamed) + '. '
+            fileindex = f"R{index_to_be_renamed}. "
             replaced = {"fileindex": fileindex,
                         "diff_status_letter": diff_status[0],
                         "src_filepath": diff_status[1],
@@ -110,10 +110,10 @@ def process_diff_status(diff_status, l_commit, r_commit, src_lang_path,
             global index_to_be_modified
             index_to_be_modified += 1
             diff_string = git_diff(filepath, l_commit, r_commit, stat=True)
-            diff_string_tmp= diff_string.split("|") 
+            diff_string_tmp= diff_string.split("|")
             diff_string_r = diff_string_tmp[1]
 
-            res = [int(i) for i in diff_string_r.split() if i.isdigit()] 
+            res = [int(i) for i in diff_string_r.split() if i.isdigit()]
             if len(res) < 4 :
                 res.append(0)
 
@@ -121,28 +121,28 @@ def process_diff_status(diff_status, l_commit, r_commit, src_lang_path,
             deletions = res[3]
 
             bold_condition = size_m
-            if insertions < size_xs :
+            if insertions < size_xs:
                 insertion_size = "XS"
             elif insertions < size_s :
                 insertion_size = "S"
-            elif insertions < size_m :
+            elif insertions < bold_condition:
                 insertion_size = "M"
             elif insertions < size_l :
                 insertion_size = "L"
             elif insertions < size_xl :
                 insertion_size = "XL"
-            else :
+            else:
                 insertion_size = "XXL"
 
-            stat_output =  str(insertions) + "(+" + insertion_size + ") "  + str(deletions) + "(-)"
+            stat_output = f"{str(insertions)}(+{insertion_size}) {str(deletions)}(-)"
 
-            if insertions >= bold_condition :
-                fileindex = "**M" + str(index_to_be_modified)  + ".** "
-                stat_output = "**" + stat_output + "**"
-            else :
-                fileindex = "M" + str(index_to_be_modified)  + ". "
-                
-            stat_output =  " | " + stat_output
+            if insertions >= bold_condition:
+                fileindex = f"**M{index_to_be_modified}.** "
+                stat_output = f"**{stat_output}**"
+            else:
+                fileindex = f"M{index_to_be_modified}. "
+
+            stat_output = f" | {stat_output}"
 
             modified = {"fileindex": fileindex,
                         "filepath": filepath,
@@ -176,8 +176,8 @@ def main(l10n_lang, src_lang, l_commit, r_commit):
 
     ex: `scripts/diff_l10n_branches.py ko dev-1.15-ko.3 dev-1.15-ko.4`
     """
-    l10n_lang_path = "content/" + l10n_lang
-    src_lang_path = "content/" + src_lang
+    l10n_lang_path = f"content/{l10n_lang}"
+    src_lang_path = f"content/{src_lang}"
     git_diff_name_status(l_commit, r_commit, src_lang_path,
                          l10n_lang_path)
     issue_template = jinja2.Template(ISSUE_TEMPLATE)
